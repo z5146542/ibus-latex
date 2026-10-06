@@ -106,6 +106,23 @@ The engine replaces your plain keyboard layout rather than sitting beside
 it, because IBus only sends keys to the active engine. It types exactly like
 that layout until you press the hotkey.
 
+### With a Korean, Japanese or Chinese engine
+
+If you switch languages with a key inside that engine (e.g. the Hangul
+key in ibus-hangul), the engine's own English mode cannot have the LaTeX
+hotkey. Instead, make the key switch between two input sources, the CJK
+engine and LaTeX symbols. On GNOME, for Right Alt with ibus-hangul:
+
+```sh
+gsettings set org.gnome.desktop.input-sources sources "[('ibus', 'hangul'), ('ibus', 'latex')]"
+gsettings set org.gnome.desktop.input-sources xkb-options "['grp:toggle']"   # Right Alt switches sources
+gsettings set org.freedesktop.ibus.engine.hangul disable-latin-mode true    # Hangul is always Korean
+gsettings set org.freedesktop.ibus.engine.hangul initial-input-mode 'hangul'
+```
+
+Add `grp:toggle` to any `xkb-options` you already have instead of replacing
+them. With latin mode off, Escape in Korean no longer switches to English.
+
 To try it without installing, run `./ibus-engine-latex` in a terminal and
 switch to it with `ibus engine latex-dev`. It lasts until IBus restarts.
 
