@@ -78,10 +78,20 @@ TeX is **not** needed: the symbol table is included in `data/`.
 ```sh
 git clone <this repository> ibus-latex
 cd ibus-latex
-./install.sh                 # just for you, no root needed
-# or
-sudo ./install.sh --system   # for every user
+sudo ./install.sh --layout us    # your keyboard layout; see below
+ibus restart                     # as your normal user, not root
 ```
+
+The files go to `/usr/local/share/ibus-latex` (change with `--prefix`), plus
+one engine definition, `latex.xml`, in IBus's own `share/ibus/component`
+directory. Root is needed for that file. IBus only reads engine definitions
+from there: `IBUS_COMPONENT_PATH` would allow another directory, but the
+daemon skips it whenever the system registry cache in `/var/cache/ibus` is
+current, as it usually is on Fedora.
+
+If `ibus restart` does not pick it up on GNOME, run
+`systemctl --user restart org.freedesktop.IBus.session.GNOME.service`, or log
+out and back in.
 
 Then add **LaTeX symbols** as an input source:
 
@@ -96,35 +106,29 @@ The engine replaces your plain keyboard layout rather than sitting beside
 it, because IBus only sends keys to the active engine. It types exactly like
 that layout until you press the hotkey.
 
+To try it without installing, run `./ibus-engine-latex` in a terminal and
+switch to it with `ibus engine latex-dev`. It lasts until IBus restarts.
+
 ### Keyboard layout
 
 `--layout` sets the layout used while the engine is active, e.g.
-`./install.sh --layout gb` or `--layout de+nodeadkeys`. Without it the
-installer reuses the layout of a previous install, or GNOME's first keyboard
-layout, or `default`, which keeps whatever layout is already active (the right
-choice on KDE and most non-GNOME desktops). On GNOME, set it explicitly if
-you change layouts.
-
-### How the per-user install works
-
-IBus only reads engine definitions from its own `share/ibus/component`
-directory, or from the directories listed in `IBUS_COMPONENT_PATH`. A
-per-user install therefore sets `IBUS_COMPONENT_PATH` to IBus's directory
-plus `~/.local/share/ibus-latex/component`:
-
-- On systemd sessions (GNOME, KDE and most distributions) it writes
-  `~/.config/environment.d/60-ibus-latex.conf` and restarts IBus right away.
-- Elsewhere it prints a line to add to `~/.profile`
-  (`. ~/.local/share/ibus-latex/env.sh`); log out and back in afterwards.
-
-`sudo ./install.sh --system` avoids all of this by putting the definition in
-IBus's own directory; afterwards run `ibus restart` as your normal user.
+`--layout gb` or `--layout de+nodeadkeys`. Without it, the installer reuses
+the layout of a previous install, or falls back to `default`, which keeps
+whatever layout is already active. `default` suits KDE and most
+non-GNOME desktops. **GNOME needs an explicit layout**: it switches to the
+engine's layout when you select the input source.
 
 ### Uninstall
 
 ```sh
-./install.sh --uninstall            # or: sudo ./install.sh --system --uninstall
+sudo ./install.sh --uninstall
+ibus restart
 ```
+
+### Packaging
+
+`./install.sh --destdir "$pkgdir" --prefix /usr --layout default` stages the
+files without root and without touching the running system.
 
 ## Configuration
 
@@ -155,7 +159,8 @@ iff	U+21D4
 
 - **Linux**: any distribution and desktop where IBus is the input method,
   on X11 or Wayland. Tested on Fedora 44 with GNOME 50 (Wayland). The
-  installer is plain POSIX `sh` (checked with dash and ShellCheck).
+  installer is plain POSIX `sh` (checked with dash and ShellCheck) and finds
+  IBus's directory with pkg-config or from where `ibus-daemon` lives.
 - **FreeBSD, OpenBSD, NetBSD**: IBus and PyGObject are packaged there, and the
   installer looks in `/usr/local` and `/usr/pkg`. It should work, but has not
   been tested.

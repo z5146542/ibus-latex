@@ -93,7 +93,7 @@ def main(argv=None):
     else:
         bus.register_component(dev_component())
         print("registered engine '%s'; switch to it with: ibus engine %s"
-              % (DEV_ENGINE, DEV_ENGINE))
+              % (DEV_ENGINE, DEV_ENGINE), flush=True)
     try:
         loop.run()
     except KeyboardInterrupt:
