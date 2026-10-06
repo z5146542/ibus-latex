@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Template filled in by install.sh -->
+<component>
+    <name>org.freedesktop.IBus.Latex</name>
+    <description>LaTeX symbol input</description>
+    <exec>@EXEC@ --ibus</exec>
+    <version>@VERSION@</version>
+    <author>Simon Park</author>
+    <license>MIT</license>
+    <homepage></homepage>
+    <textdomain></textdomain>
+    <engines>
+        <engine>
+            <name>latex</name>
+            <language>en</language>
+            <license>MIT</license>
+            <author>Simon Park</author>
+            <layout>@LAYOUT@</layout>
+            <layout_variant>@VARIANT@</layout_variant>
+            <longname>@LONGNAME@</longname>
+            <description>Type Unicode symbols by LaTeX name: press Ctrl+Shift+L, type mapsto, press Space.</description>
+            <icon>ibus-keyboard</icon>
+            <rank>0</rank>
+        </engine>
+    </engines>
+</component>
