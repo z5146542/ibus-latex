@@ -11,11 +11,14 @@ import unicodedata
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(os.path.dirname(PACKAGE_DIR), "data")
 
-# (file, preferred).  Later files override earlier ones; names from preferred
-# files rank ahead of the long tail of unicode-math names in search results.
+# (file, preferred).  Names from preferred files rank ahead of the long tail
+# of unicode-math names in search results.  A name may appear in several
+# files with different symbols; the earlier file's symbol is listed first
+# (\^o is ô from text.tsv, then superscript ᵒ from extra.tsv).
 BUILTIN_TABLES = (
     ("unicode-math.tsv", False),
     ("latex.tsv", True),
+    ("text.tsv", True),
     ("extra.tsv", True),
 )
 
@@ -110,7 +113,8 @@ def alphabet_aliases(symbols):
     """Extra names like mathbb{R} and bbR for unicode-math's \\BbbR etc."""
     out = []
     for prefix, patterns in ALPHABET_ALIASES:
-        for name, sym in symbols.items():
+        for sym in symbols:
+            name = sym.name
             if not name.startswith(prefix):
                 continue
             rest = name[len(prefix):]
@@ -127,20 +131,25 @@ def alphabet_aliases(symbols):
 
 class SymbolTable:
     def __init__(self, symbols):
-        self.symbols = dict(symbols)
+        """symbols: Symbol objects, highest priority first.  A name can occur
+        more than once with different text."""
+        self.symbols = list(symbols)
+        self._first = {}
         self._prefixes = set()
-        for name in self.symbols:
-            for i in range(1, len(name) + 1):
-                self._prefixes.add(name[:i])
+        for sym in self.symbols:
+            self._first.setdefault(sym.name, sym)
+            for i in range(1, len(sym.name) + 1):
+                self._prefixes.add(sym.name[:i])
 
     def __len__(self):
         return len(self.symbols)
 
     def __contains__(self, name):
-        return name in self.symbols
+        return name in self._first
 
     def get(self, name):
-        return self.symbols.get(name)
+        """The first symbol with this name."""
+        return self._first.get(name)
 
     def is_prefix(self, text):
         """True if some name starts with text."""
@@ -152,13 +161,13 @@ class SymbolTable:
         Ranking: exact match, case-insensitive exact match, prefix,
         case-insensitive prefix, substring, case-insensitive substring.
         Within a group, preferred (standard LaTeX) names come first, then
-        shorter names.
+        shorter names, then table order.
         """
         if not query:
             return []
         folded = query.casefold()
         ranked = []
-        for sym in self.symbols.values():
+        for order, sym in enumerate(self.symbols):
             name = sym.name
             if name == query:
                 tier = 0
@@ -174,32 +183,41 @@ class SymbolTable:
                 tier = 5
             else:
                 continue
-            ranked.append((tier, not sym.preferred, len(name), name, sym))
-        ranked.sort(key=lambda r: r[:4])
-        return [r[4] for r in ranked[:limit]]
+            ranked.append((tier, not sym.preferred, len(name), name, order, sym))
+        ranked.sort(key=lambda r: r[:5])
+        return [r[5] for r in ranked[:limit]]
 
 
 def load_table(data_dir=DATA_DIR, user_file=None):
-    """Build the table from the bundled data plus an optional user file."""
-    symbols = {}
+    """Build the table from the bundled data plus an optional user file.
 
-    def add(sym):
-        old = symbols.get(sym.name)
-        if old is not None and not sym.description and old.text == sym.text:
+    The same name and symbol from a later file replaces the earlier entry in
+    place (so standard LaTeX names in latex.tsv become preferred); the user
+    file replaces every built-in symbol of a name it defines.
+    """
+    symbols = {}  # (name, text) -> Symbol, in priority order
+
+    def add(sym, override=False):
+        if override:
+            for key in [k for k in symbols if k[0] == sym.name]:
+                del symbols[key]
+        old = symbols.get((sym.name, sym.text))
+        if old is not None and not sym.description:
             sym.description = old.description
-        symbols[sym.name] = sym
+        symbols[(sym.name, sym.text)] = sym
 
     for filename, preferred in BUILTIN_TABLES:
         path = os.path.join(data_dir, filename)
         for name, text, desc in read_tsv(path):
             add(Symbol(name, text, desc, preferred))
         if filename == "unicode-math.tsv":
-            for sym in alphabet_aliases(symbols):
-                if sym.name not in symbols:
+            names = {name for name, _ in symbols}
+            for sym in alphabet_aliases(list(symbols.values())):
+                if sym.name not in names:
                     add(sym)
 
     if user_file and os.path.isfile(user_file):
         for name, text, desc in read_tsv(user_file):
-            add(Symbol(name, text, desc, preferred=True))
+            add(Symbol(name, text, desc, preferred=True), override=True)
 
-    return SymbolTable(symbols)
+    return SymbolTable(symbols.values())

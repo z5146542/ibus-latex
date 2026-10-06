@@ -167,6 +167,17 @@ class EngineTest(unittest.TestCase):
         self.c.key(IBus.KEY_space)
         self.assertEqual(self.c.commits, ["ℝ", "²"])
 
+    def test_text_accents(self):
+        self.c.hotkey()
+        self.c.type('"o')
+        self.c.key(IBus.KEY_space)
+        # Dead-key layouts send dead_diaeresis for the " key.
+        self.c.hotkey()
+        self.c.key(IBus.KEY_dead_diaeresis)
+        self.c.type("u")
+        self.c.key(IBus.KEY_space)
+        self.assertEqual(self.c.commits, ["ö", "ü"])
+
     def test_escape_cancels(self):
         self.c.hotkey()
         self.c.type("alpha")

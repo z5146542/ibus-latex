@@ -49,6 +49,18 @@ class ComposerTest(unittest.TestCase):
         typed(self.c, "^2")
         self.assertEqual(self.c.accept(), "²")
 
+    def test_text_accent(self):
+        typed(self.c, '"o')
+        self.assertEqual(self.c.preedit, '\\"o')
+        self.assertEqual(self.c.accept(), "ö")
+        self.c.start()
+        typed(self.c, "v{c}")
+        self.assertEqual(self.c.accept(), "č")
+
+    def test_shared_name_second_meaning_by_digit(self):
+        typed(self.c, "^o")
+        self.assertEqual(self.c.type_char("2"), "ᵒ")
+
     def test_digit_selects_from_page(self):
         typed(self.c, "map")
         second = self.c.candidates[1].text

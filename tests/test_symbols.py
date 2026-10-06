@@ -41,6 +41,21 @@ class SymbolTableTest(unittest.TestCase):
         self.assertEqual(self.text("_i"), "ᵢ")
         self.assertEqual(self.text("^alpha"), "ᵅ")
 
+    def test_text_accents(self):
+        self.assertEqual(self.text('"o'), "ö")
+        self.assertEqual(self.text('"{o}'), "ö")
+        self.assertEqual(self.text("'e"), "é")
+        self.assertEqual(self.text("v{c}"), "č")
+        self.assertEqual(self.text("H{o}"), "ő")
+        self.assertEqual(self.text("c{c}"), "ç")
+        self.assertEqual(self.text("ss"), "ß")
+        self.assertIsNone(self.table.get('"q'))  # no precomposed q-umlaut
+
+    def test_shared_name_lists_latex_meaning_first(self):
+        found = [s.text for s in self.table.search("^o") if s.name == "^o"]
+        self.assertEqual(found, ["ô", "ᵒ"])
+        self.assertEqual(self.text("^2"), "²")
+
     def test_combining_accents(self):
         sym = self.table.get("vec")
         self.assertEqual(sym.text, "⃗")
@@ -73,6 +88,15 @@ class SymbolTableTest(unittest.TestCase):
         self.assertEqual(table.get("heart").text, "♥")
         self.assertEqual(table.get("mapsto").text, "⟼")
         self.assertTrue(table.get("heart").preferred)
+        self.assertEqual([s.text for s in table.symbols if s.name == "mapsto"], ["⟼"])
+
+    def test_user_file_replaces_all_symbols_of_a_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "symbols.tsv")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("^o\t°\n")
+            table = load_table(user_file=path)
+        self.assertEqual([s.text for s in table.symbols if s.name == "^o"], ["°"])
 
 
 class ParseTextTest(unittest.TestCase):

@@ -48,6 +48,14 @@ NEXT_KEYS = frozenset((IBus.KEY_Tab, IBus.KEY_Down, IBus.KEY_KP_Down))
 PREV_KEYS = frozenset((IBus.KEY_ISO_Left_Tab, IBus.KEY_Up, IBus.KEY_KP_Up))
 PAGE_DOWN_KEYS = frozenset((IBus.KEY_Page_Down, IBus.KEY_KP_Page_Down))
 PAGE_UP_KEYS = frozenset((IBus.KEY_Page_Up, IBus.KEY_KP_Page_Up))
+# Layouts with dead keys (US-International, ...) send these for " ' ` ^ ~;
+# in compose mode they stand for LaTeX's accent commands (\"o, \'e, ...).
+DEAD_KEY_CHARS = {
+    IBus.KEY_dead_grave: "`", IBus.KEY_dead_acute: "'",
+    IBus.KEY_dead_circumflex: "^", IBus.KEY_dead_tilde: "~",
+    IBus.KEY_dead_macron: "=", IBus.KEY_dead_abovedot: ".",
+    IBus.KEY_dead_diaeresis: '"',
+}
 
 
 def _modifiers(state):
@@ -213,7 +221,7 @@ class LatexEngine(IBus.EngineSimple):
         elif keyval in PAGE_UP_KEYS:
             c.page(-1)
         else:
-            ch = _keyval_char(keyval)
+            ch = DEAD_KEY_CHARS.get(keyval) or _keyval_char(keyval)
             if not ch:
                 # Arrows, Home, F-keys...: give up and let the key through.
                 self._abandon()

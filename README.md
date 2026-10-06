@@ -39,7 +39,7 @@ If nothing matches, Space and Enter do nothing, so you can fix a typo.
 
 ## What names work
 
-About 3,300 names:
+About 3,900 names:
 
 - **Standard LaTeX and amssymb names** (`\to`, `\le`, `\implies`, `\forall`,
   `\alpha` … `\Omega`). These rank first. Greek letters are the plain
@@ -50,8 +50,17 @@ About 3,300 names:
 - **Math alphabets**: `\mathbb{R}` / `\bbR` → `ℝ`, `\mathcal{L}` → `ℒ`,
   `\mathfrak{g}` → `𝔤`, `\mathbf{x}`, `\mathit`, `\mathsf`, `\mathtt`, and
   digits, e.g. `\mathbb{1}` → `𝟙`.
+- **Text accents and letters** as in LaTeX: `\"o` or `\"{o}` → `ö`,
+  `\'e` → `é`, `` \`a `` → `à`, `\^o` → `ô`, `\~n` → `ñ`, `\=a` → `ā`,
+  `\.z` → `ż`; letter-named accents take braces: `\v{c}` → `č`,
+  `\c{c}` → `ç`, `\H{o}` → `ő`, `\u{g}` → `ğ`, `\k{a}` → `ą`,
+  `\r{a}` → `å`. Also `\ss` → `ß`, `\ae`, `\oe`, `\o`, `\l`, `\aa`,
+  `\th`, `\textemdash`, `\texteuro`, `\guillemotleft` and similar. On
+  layouts with dead keys, the dead `"` `'` `` ` `` `^` `~` keys work too.
 - **Super- and subscripts** in the Julia REPL style: `\^2` → `²`,
-  `\_i` → `ᵢ`, `\^alpha` → `ᵅ` (Unicode only has some letters).
+  `\_i` → `ᵢ`, `\^alpha` → `ᵅ` (Unicode only has some letters). Where a
+  name has both meanings, the LaTeX one comes first: `\^o` lists `ô`, then
+  `ᵒ` (press `2` for it).
 - **Combining accents**: type the letter first, then `\vec`, `\hat`, `\bar`,
   `\tilde`, `\dot` … (`x` + `\vec` → `x⃗`).
 
@@ -241,6 +250,7 @@ ibus_latex/composer.py   compose-mode state machine (no IBus)
 ibus_latex/engine.py     IBus engine: keys, preedit, candidate list
 ibus_latex/main.py       process entry point / engine factory
 data/latex.tsv           standard LaTeX names (hand-maintained, ranked first)
+data/text.tsv            text accents and letters (tools/gen_text_tsv.py)
 data/extra.tsv           super/subscripts
 data/unicode-math.tsv    generated from unicode-math-table.tex
 component/latex.xml.in   IBus engine definition template
