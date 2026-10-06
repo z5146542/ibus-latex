@@ -78,40 +78,48 @@ TeX is **not** needed: the symbol table is included in `data/`.
 ```sh
 git clone <this repository> ibus-latex
 cd ibus-latex
-sudo ./install.sh --layout us    # your keyboard layout; see below
-ibus restart                     # as your normal user, not root
+./setup.sh
 ```
 
-The files go to `/usr/local/share/ibus-latex` (change with `--prefix`), plus
-one engine definition, `latex.xml`, in IBus's own `share/ibus/component`
-directory. Root is needed for that file. IBus only reads engine definitions
-from there: `IBUS_COMPONENT_PATH` would allow another directory, but the
-daemon skips it whenever the system registry cache in `/var/cache/ibus` is
-current, as it usually is on Fedora.
+Run it as your normal user. It asks for your password once and:
 
-If `ibus restart` does not pick it up on GNOME, run
-`systemctl --user restart org.freedesktop.IBus.session.GNOME.service`, or log
-out and back in.
+1. installs IBus and Python's GObject bindings if they are missing (apt, dnf,
+   pacman, zypper, apk, xbps or FreeBSD pkg), after asking;
+2. detects your keyboard layout and installs the engine system-wide;
+3. restarts IBus;
+4. makes **LaTeX symbols** your English input source. On GNOME it takes the
+   place of your first keyboard layout; on other desktops it does the same
+   in IBus's own engine list. `--add` keeps both instead;
+5. if Hangul is one of your input sources and you switch Korean/English with
+   a key inside it (e.g. Right Alt), offers to make that key switch between
+   Hangul and English+LaTeX instead (see below).
 
-Then add **LaTeX symbols** as an input source:
+Then press Ctrl+Shift+L, type `mapsto`, and press Space.
 
-- **GNOME**: Settings → Keyboard → Input Sources → Add → English → LaTeX
-  symbols. To replace an existing layout with it from the shell instead
-  (keep any other sources you have in the list):
-  `gsettings set org.gnome.desktop.input-sources sources "[('ibus', 'latex')]"`
-- **KDE, Xfce, i3, sway, …** (any desktop running IBus): `ibus-setup` →
-  Input Method → Add → English → LaTeX symbols, or `ibus engine latex`.
+`./setup.sh --uninstall` undoes everything, putting back each setting it
+changed. `./setup.sh --help` lists the options (`--layout`, `--add`,
+`--toggle-key`, `--yes`).
 
 The engine replaces your plain keyboard layout rather than sitting beside
 it, because IBus only sends keys to the active engine. It types exactly like
 that layout until you press the hotkey.
 
+If IBus is not your input method yet (some non-GNOME desktops), make it so
+first and log in again: on Debian/Ubuntu `im-config -n ibus`, on KDE System
+Settings → Keyboard → Virtual Keyboard → IBus Wayland.
+
 ### With a Korean, Japanese or Chinese engine
 
-If you switch languages with a key inside that engine (e.g. the Hangul
-key in ibus-hangul), the engine's own English mode cannot have the LaTeX
-hotkey. Instead, make the key switch between two input sources, the CJK
-engine and LaTeX symbols. On GNOME, for Right Alt with ibus-hangul:
+If you switch languages with a key inside that engine (e.g. the Hangul key
+or Right Alt in ibus-hangul), the engine's own English mode cannot have the
+LaTeX hotkey. Instead, the key should switch between two input sources, the
+CJK engine and LaTeX symbols. `setup.sh` offers this for Hangul, or ask for it
+with `--toggle-key KEY` (`ralt`, `lalt`, `rctrl`, `lctrl`, `caps`, `menu`,
+`hangul`; GNOME only). For Hangul it also turns off ibus-hangul's English
+mode, so Hangul is always Korean. Escape in Korean then no longer switches
+to English.
+
+Doing the same by hand on GNOME, for Right Alt:
 
 ```sh
 gsettings set org.gnome.desktop.input-sources sources "[('ibus', 'hangul'), ('ibus', 'latex')]"
@@ -121,31 +129,46 @@ gsettings set org.freedesktop.ibus.engine.hangul initial-input-mode 'hangul'
 ```
 
 Add `grp:toggle` to any `xkb-options` you already have instead of replacing
-them. With latin mode off, Escape in Korean no longer switches to English.
+them.
 
-To try it without installing, run `./ibus-engine-latex` in a terminal and
-switch to it with `ibus engine latex-dev`. It lasts until IBus restarts.
+### Manual install
 
-### Keyboard layout
+`setup.sh` wraps `install.sh`, which only installs the engine:
+
+```sh
+sudo ./install.sh --layout us    # your keyboard layout; see below
+ibus restart                     # as your normal user, not root
+```
+
+Then add **LaTeX symbols** as an input source yourself: on GNOME, Settings →
+Keyboard → Input Sources → Add → English → LaTeX symbols; elsewhere,
+`ibus-setup` → Input Method → Add, or `ibus engine latex`. If `ibus restart`
+does not pick it up on GNOME, run
+`systemctl --user restart org.freedesktop.IBus.session.GNOME.service`.
+Remove it with `sudo ./install.sh --uninstall`.
+
+The files go to `/usr/local/share/ibus-latex` (change with `--prefix`), plus
+one engine definition, `latex.xml`, in IBus's own `share/ibus/component`
+directory. Root is needed for that file. IBus only reads engine definitions
+from there: `IBUS_COMPONENT_PATH` would allow another directory, but the
+daemon skips it whenever the system registry cache in `/var/cache/ibus` is
+current, as it usually is on Fedora.
 
 `--layout` sets the layout used while the engine is active, e.g.
 `--layout gb` or `--layout de+nodeadkeys`. Without it, the installer reuses
 the layout of a previous install, or falls back to `default`, which keeps
-whatever layout is already active. `default` suits KDE and most
-non-GNOME desktops. **GNOME needs an explicit layout**: it switches to the
-engine's layout when you select the input source.
+whatever layout is already active. `default` suits KDE and most non-GNOME
+desktops. **GNOME needs an explicit layout**: it switches to the engine's
+layout when you select the input source. `setup.sh` works out the layout for
+you.
 
-### Uninstall
+Packagers: `./install.sh --destdir "$pkgdir" --prefix /usr --layout default`
+stages the files without root and without touching the running system.
 
-```sh
-sudo ./install.sh --uninstall
-ibus restart
-```
+### Try without installing
 
-### Packaging
-
-`./install.sh --destdir "$pkgdir" --prefix /usr --layout default` stages the
-files without root and without touching the running system.
+Run `./ibus-engine-latex` in a terminal and switch to it with
+`ibus engine latex-dev`. It lasts until IBus restarts.
 
 ## Configuration
 
@@ -193,6 +216,7 @@ iff	U+21D4
 ```sh
 python3 -m unittest discover -s tests   # logic tests, no IBus needed
 tests/run-ibus-tests.sh                 # end-to-end, private ibus-daemon
+tests/run-setup-tests.sh                # setup.sh, with stubs and sandboxed settings
 ./ibus-engine-latex                     # run from the tree as engine "latex-dev";
 ibus engine latex-dev                   #   then switch to it to try it out
 ```
@@ -220,7 +244,9 @@ data/latex.tsv           standard LaTeX names (hand-maintained, ranked first)
 data/extra.tsv           super/subscripts
 data/unicode-math.tsv    generated from unicode-math-table.tex
 component/latex.xml.in   IBus engine definition template
-install.sh               POSIX installer
+setup.sh                 one-command install + desktop setup (POSIX sh)
+install.sh               system-wide installer, also for packagers
+tools/desktop_setup.py   input-source changes for setup.sh (saved for undo)
 ```
 
 ## License

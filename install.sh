@@ -18,6 +18,9 @@ usage() {
 	cat <<EOF
 Usage: sudo ./install.sh [options]
 
+Installs the engine system-wide.  ./setup.sh does this and the desktop
+setup in one go; use install.sh directly for scripted or packaged installs.
+
 Options:
   --prefix DIR     where the engine's files go: DIR/share/$NAME
                    (default: /usr/local)
@@ -29,6 +32,7 @@ Options:
   --destdir DIR    stage the files under DIR instead of installing (for
                    packagers); does not need root
   --uninstall      remove an installation made with the same options
+  --quiet          skip the next-steps hints (used by setup.sh)
   -h, --help       show this help
 EOF
 }
@@ -38,7 +42,7 @@ die() { printf '%s: %s\n' "${0##*/}" "$*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
 args=$*
-prefix=/usr/local layout='' python='' destdir='' action=install
+prefix=/usr/local layout='' python='' destdir='' action=install quiet=0
 while [ $# -gt 0 ]; do
 	case $1 in
 	--prefix=*) prefix=${1#*=} ;;
@@ -50,6 +54,7 @@ while [ $# -gt 0 ]; do
 	--destdir=*) destdir=${1#*=} ;;
 	--destdir) [ $# -ge 2 ] || die "$1 needs an argument"; destdir=$2; shift ;;
 	--uninstall) action=uninstall ;;
+	--quiet) quiet=1 ;;
 	-h | --help) usage; exit 0 ;;
 	*) die "unknown option: $1 (see --help)" ;;
 	esac
@@ -179,6 +184,7 @@ do_install() {
 	[ -z "$destdir" ] || return 0
 
 	refresh_system_cache
+	[ "$quiet" = 0 ] || return 0
 	restart_hint
 	cat <<EOF
 
@@ -202,6 +208,7 @@ do_uninstall() {
 	fi
 	[ -z "$destdir" ] || return 0
 	refresh_system_cache
+	[ "$quiet" = 0 ] || return 0
 	restart_hint
 	say "Remove \"LaTeX symbols\" from your input sources if it is still listed."
 }
